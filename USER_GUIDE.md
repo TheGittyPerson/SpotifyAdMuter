@@ -123,19 +123,17 @@ You may edit this file using TextEdit or any text editor.
 1. **Open `settings.json`**
 2. By default, the value next to `"create_shortcut_script_file"` is set to `true`: <br>
 
-   ```
+   ```json
    {
-       "create_shortcut_script_file": true,
-       ...
+       "create_shortcut_script_file": true
    }
    ```
 
    To disable shortcut file creation, **change the value `true` to `false`**:
 
-   ```
+   ```json
    {
-       "create_shortcut_script_file": false,
-       ...
+       "create_shortcut_script_file": false
    }
    ```
 
@@ -150,23 +148,19 @@ To re-enable, change `false` back to `true`.
 2. By default, the value next to `"shortcut_script_file_dir"` is set to your Desktop folder: <br>
    _Example:_
 
-   ```
+   ```json
    {
-       ...
-       "shortcut_script_file_dir": "/Users/yourName/Desktop",
-       ...
+       "shortcut_script_file_dir": "/Users/yourName/Desktop"
    }
    ```
 
    To change the location (folder) of the shortcut file, **change the value next to `"shortcut_script_file_dir"`**.
    <br><br>
-   For example, if you want to change the location to `Users ▸ yourName ▸ Desktop ▸ Shortcuts ▸ DirName`:
+   For example, if you want to change the location to `Users ▸ yourName ▸ Desktop ▸ Shortcuts`:
 
-   ```
+   ```json
    {
-       ...
-       "shortcut_script_file_dir": "/Users/yourName/Desktop/Shortcuts/DirName",
-       ...
+       "shortcut_script_file_dir": "/Users/yourName/Desktop/Shortcuts"
    }
    ```
 
@@ -179,11 +173,9 @@ To re-enable, change `false` back to `true`.
 1. **Open `settings.json`**
 2. By default, the value next to `"ad_alert_sound"` is set to `true`
 
-   ```
+   ```json
    {
-       ...
-       "ad_alert_sound": true,
-       ...
+       "ad_alert_sound": true
    }
    ```
 
@@ -191,11 +183,9 @@ To re-enable, change `false` back to `true`.
    <br><br>
    To disable the ad alert sound, **change the value `true` to `false`**:
 
-   ```
+   ```json
    {
-       ...
-       "ad_alert_sound": false,
-       ...
+       "ad_alert_sound": false
    }
    ```
 
@@ -207,21 +197,17 @@ To re-enable, change `false` back to `true`.
 1. **Open `settings.json`**
 2. By default, the value next to `"ad_alert_volume"` is set to `0.3`
 
-   ```
+   ```json
    {
-       ...
-       "ad_alert_volume": 0.3,
-       ...
+       "ad_alert_volume": 0.3
    }
    ```
    
    To change the volume, **change the value to a number between 0 and 1**:
 
-   ```
+   ```json
    {
-       ...
-       "ad_alert_sound": false,
-       ...
+       "ad_alert_sound": false
    }
    ```
    ⚠️**NOTE: AVOID SETTING THE ALERT VOLUME ABOVE 0.7**, especially if you use headphones.
@@ -239,21 +225,17 @@ To add your own keywords:
 1. **Open `settings.json`**
 2. By default:
 
-   ```
+   ```json
    {
-       ...
-       "custom_ad_keywords": [],
-       ...
+       "custom_ad_keywords": []
    }
    ```
 
    To add keywords, type the word in the square brackets in quotes, separated by commas:
 
-   ```
+   ```json
    {
-       ...
-       "custom_ad_keywords": ["example", "another example"],
-       ...
+       "custom_ad_keywords": ["example", "another example"]
    }
    ```
 
@@ -274,9 +256,8 @@ To change the poll interval:
 1. **Open `settings.json`**
 2. By default:
 
-   ```
+   ```json
    {
-       ...
        "poll interval": 0.3
    }
    ```
@@ -286,9 +267,8 @@ To change the poll interval:
    Increasing the poll interval above 0.5 seconds may reduce ad detection responsiveness and introduce additional 
    latency, though this is acceptable if slower detection is not a concern.
 
-   ```
+   ```json
    {
-       ...
        "poll interval": 0.5
    }
    ```
