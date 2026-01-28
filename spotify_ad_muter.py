@@ -109,7 +109,7 @@ class SpotifyAdMuter:
         self.poll_interval = self.settings.get("poll_interval", 0.3)
         
         self.IDLE_RAMP_RATE = 0.005
-        self.MAX_POLL_MULTIPLIER = 30
+        self.MAX_POLL_MULTIPLIER = 34
 
     def run(self):
         """Run Spotify Ad Muter (SAM)."""
