@@ -134,8 +134,10 @@ class SpotifyAdMuter:
             ad_was_current = False
 
             # Wait for Spotify to open
+            precount = 0
             while not self._spotify_is_running():
-                sleep(1)
+                sleep(self._get_delay(precount, self.poll_interval))
+                precount += 1
 
             # Read initial state
             previously_playing = self._spotify_is_playing()
@@ -165,9 +167,11 @@ class SpotifyAdMuter:
                     self._play_tone()
 
                 ad_was_current = True
-
+            
+            count = 0
             while True:
-                sleep(self.poll_interval)
+                sleep(self._get_delay(count, self.poll_interval))
+                count += 1
 
                 if not self._spotify_is_running():
                     sleep(1)
@@ -190,6 +194,7 @@ class SpotifyAdMuter:
                     else:
                         self._log("Music started! Sam will mute Spotify when "
                                   "ads are playing")
+                        count = 0
                     previously_playing = playing
 
                 # If Spotify is NOT playing, do NOT apply ad logic yet
@@ -284,6 +289,31 @@ class SpotifyAdMuter:
                   f"\033[37m["
                   + datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                   + "]\033[0m")
+            
+    @staticmethod
+    def _get_delay(count: int, default: float) -> float:
+        """Return increasing delay between counts.
+        
+        This reduces constant background checks during inactivity.
+        """
+        # Comments assuming default delay, 0.3 seconds
+        if count == 1000:     # After 5 mins inactive,
+            multiplier = 1.5  # Delay = 0.45s
+        elif count == 2000:   # After 10 mins inactive,
+            multiplier = 2    # Delay = 0.6s
+        elif count == 3000:   # After 15 mins inactive,
+            multiplier = 4    # Delay = 1.2s
+        elif count == 4000:   # After 20 mins inactive,
+            multiplier = 6    # Delay = 1.8s
+        elif count == 6000:   # After 30 mins inactive,
+            multiplier = 10   # Delay = 3.0s
+        elif count == 9000:   # After 45 mins inactive,
+            multiplier = 15   # Delay = 4.5s
+        elif count == 12000:  # After 1 hour inactive,
+            multiplier = 20   # Delay = 6s
+        else:
+            multiplier = 1
+        return default * multiplier
 
     @staticmethod
     def _err(
