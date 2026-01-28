@@ -107,6 +107,9 @@ class SpotifyAdMuter:
         self.ad_alert_volume = self.settings.get("ad_alert_volume", 0.3)
         self.custom_ad_keywords = self.settings.get("custom_ad_keywords", [])
         self.poll_interval = self.settings.get("poll_interval", 0.3)
+        
+        self.IDLE_RAMP_RATE = 0.005
+        self.MAX_POLL_MULTIPLIER = 30
 
     def run(self):
         """Run Spotify Ad Muter (SAM)."""
@@ -289,32 +292,17 @@ class SpotifyAdMuter:
                   f"\033[37m["
                   + datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                   + "]\033[0m")
-            
-    @staticmethod
-    def _get_delay(count: int, default: float) -> float:
-        """Return increasing delay between counts.
-        
-        This reduces constant background checks during inactivity.
+    
+    def _get_delay(self, count: int, base: float) -> float:
         """
-        # Comments assuming default delay, 0.3 seconds
-        if count == 1000:     # After 5 mins inactive,
-            multiplier = 1.5  # Delay = 0.45s
-        elif count == 2000:   # After 10 mins inactive,
-            multiplier = 2    # Delay = 0.6s
-        elif count == 3000:   # After 15 mins inactive,
-            multiplier = 4    # Delay = 1.2s
-        elif count == 4000:   # After 20 mins inactive,
-            multiplier = 6    # Delay = 1.8s
-        elif count == 6000:   # After 30 mins inactive,
-            multiplier = 10   # Delay = 3.0s
-        elif count == 9000:   # After 45 mins inactive,
-            multiplier = 15   # Delay = 4.5s
-        elif count == 12000:  # After 1 hour inactive,
-            multiplier = 20   # Delay = 6s
-        else:
-            multiplier = 1
-        return default * multiplier
-
+        Gradually increase poll delay during inactivity,
+        capped to avoid excessive latency.
+        """
+        multiplier = min(
+            1 + count * self.IDLE_RAMP_RATE, self.MAX_POLL_MULTIPLIER
+        )
+        return base * multiplier
+    
     @staticmethod
     def _err(
             message: str,
