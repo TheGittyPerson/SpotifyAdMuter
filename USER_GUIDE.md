@@ -1,5 +1,5 @@
 For **Spotify Ad Muter (SAM)** <br>
-Version: **2.1.0** <br>
+Version: **2.1.1** <br>
 Operating System: **macOS** <br>
 
 Last updated: **December 14, 2025**

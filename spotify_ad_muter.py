@@ -81,7 +81,7 @@ class SpotifyAdMuter:
             Time delay between polls, in seconds.
     """
 
-    VERSION = "2.1.0"
+    VERSION = "2.1.1"
     JSON_SETTINGS_NAME = "settings.json"
     JSON_SETTINGS_PATH = Path(__file__).resolve().parent / JSON_SETTINGS_NAME
     SHORTCUT_SCRIPT_NAME = "SAM.command"
