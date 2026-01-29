@@ -137,10 +137,10 @@ class SpotifyAdMuter:
             ad_was_current = False
 
             # Wait for Spotify to open
-            precount = 0
+            count = 0
             while not self._spotify_is_running():
-                sleep(self._get_delay(precount, self.poll_interval))
-                precount += 1
+                sleep(self._get_delay(count, self.poll_interval))
+                count += 1
 
             # Read initial state
             previously_playing = self._spotify_is_playing()
@@ -174,7 +174,6 @@ class SpotifyAdMuter:
             count = 0
             while True:
                 sleep(self._get_delay(count, self.poll_interval))
-                count += 1
 
                 if not self._spotify_is_running():
                     sleep(1)
@@ -197,12 +196,14 @@ class SpotifyAdMuter:
                     else:
                         self._log("Music started! Sam will mute Spotify when "
                                   "ads are playing")
-                        count = 0
                     previously_playing = playing
 
                 # If Spotify is NOT playing, do NOT apply ad logic yet
                 if not playing:
+                    count += 1
                     continue
+                
+                count = 0
 
                 # ────────────────────────────────────────────────
                 # 2. AD STARTS
@@ -295,8 +296,9 @@ class SpotifyAdMuter:
     
     def _get_delay(self, count: int, base: float) -> float:
         """
-        Gradually increase poll delay during inactivity,
-        capped to avoid excessive latency.
+        Gradually increase poll delay during inactivity.
+        
+        Capped to avoid excessive latency.
         """
         multiplier = min(
             1 + count * self.IDLE_RAMP_RATE, self.MAX_POLL_MULTIPLIER
