@@ -310,7 +310,6 @@ class SpotifyAdMuter:
             self.poll_interval * math.exp(self.IDLE_RAMP_RATE * elapsed),
             self.MAX_DELAY
         )
-        self._log(f"{elapsed = :.3f}s | {delay = :.3f}s")
         return delay
     
     @staticmethod
