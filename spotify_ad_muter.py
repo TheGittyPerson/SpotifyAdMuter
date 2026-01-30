@@ -80,44 +80,44 @@ class SpotifyAdMuter:
         poll_interval (float):
             Time delay between polls, in seconds.
     """
-
+    
     VERSION = "2.1.1"
     JSON_SETTINGS_NAME = "settings.json"
     JSON_SETTINGS_PATH = Path(__file__).resolve().parent / JSON_SETTINGS_NAME
     SHORTCUT_SCRIPT_NAME = "SAM.command"
-
+    
     def __init__(self):
         """Initialize SpotifyAdMuter class attributes."""
-
+        
         self.settings = self._get_json_settings()
-
+        
         self.create_shortcut_is_on = (
             self.settings.get("create_shortcut_script_file", True)
         )
         self.shortcut_script_path = (
-            Path(
-                self.settings.get(
-                    "shortcut_script_file_dir",
-                    Path(os.path.expanduser("~/Desktop"))
+                Path(
+                    self.settings.get(
+                        "shortcut_script_file_dir",
+                        Path(os.path.expanduser("~/Desktop"))
+                    )
                 )
-            )
-            / self.SHORTCUT_SCRIPT_NAME
+                / self.SHORTCUT_SCRIPT_NAME
         )
         self.ad_alert_sound_is_on = self.settings.get("ad_alert_sound", True)
         self.ad_alert_volume = self.settings.get("ad_alert_volume", 0.3)
         self.custom_ad_keywords = self.settings.get("custom_ad_keywords", [])
         self.poll_interval = self.settings.get("poll_interval", 0.3)
         
-        self.IDLE_RAMP_RATE = 0.005
-        self.MAX_POLL_MULTIPLIER = 34
-
+        self.IDLE_RAMP_RATE = 0.00195  # per second
+        self.MAX_DELAY = 10  # seconds
+    
     def run(self):
         """Run Spotify Ad Muter (SAM)."""
         try:
             if not self._is_macos():
                 self._log("\nSorry :( Sam only works on macOS!")
                 sys.exit(0)
-
+            
             print(
                 "\n\033[1m\033[32m"
                 + "\n🎧 Spotify Ad Muter (SAM) started 🎶🎵"
@@ -129,24 +129,23 @@ class SpotifyAdMuter:
                 + "\n*❖* ——————————————— ACTIVITY LOG ——————————————— *❖*"
                 + "\033[0m"
             )
-
+            
             self._check_shortcut_script()
-
+            
             self._log("Sam is waiting for Spotify...")
-
+            
             ad_was_current = False
-
+            
             # Wait for Spotify to open
-            count = 0
+            last_active = datetime.now()
             while not self._spotify_is_running():
-                sleep(self._get_delay(count, self.poll_interval))
-                count += 1
-
+                sleep(self._get_delay(last_active))
+            
             # Read initial state
             previously_playing = self._spotify_is_playing()
             previous_volume = self._get_spotify_volume()
             ad_is_current_track = self._ad_is_track()
-
+            
             # Start of program — print correct initial message
             if not previously_playing:
                 self._log("No music playing. Sam is waiting for music to play...")
@@ -154,37 +153,37 @@ class SpotifyAdMuter:
                 self._log(
                     "Music started! Sam will mute Spotify when ads are playing."
                 )
-
+            
             # SPECIAL: If program starts on an ad AND it is playing
             # → treat this as “ad started”
             if ad_is_current_track and previously_playing:
                 self._log(f"🔇 Ad detected — muting Spotify.")
                 # Save current volume (even if 0)
                 previous_volume = self._get_spotify_volume()
-
+                
                 # Mute Spotify
                 self._set_spotify_volume(0)
-
+                
                 # Play tone
                 if self.ad_alert_sound_is_on:
                     self._play_tone()
-
+                
                 ad_was_current = True
             
-            count = 0
+            last_active = datetime.now()
             while True:
-                sleep(self._get_delay(count, self.poll_interval))
-
+                sleep(self._get_delay(last_active))
+                
                 if not self._spotify_is_running():
                     sleep(1)
                     # Double-check to avoid race-condition during quit
                     if not self._spotify_is_running():
                         self._log("\n🚪 Spotify closed. Sam is going to sleep...")
                         break
-
+                
                 playing = self._spotify_is_playing()
                 ad_is_current = self._ad_is_track()
-
+                
                 # ────────────────────────────────────────────────
                 # 1. Handle play/pause messages
                 #    (NOT ad-related; this always fires correctly)
@@ -197,48 +196,47 @@ class SpotifyAdMuter:
                         self._log("Music started! Sam will mute Spotify when "
                                   "ads are playing")
                     previously_playing = playing
-
+                
                 # If Spotify is NOT playing, do NOT apply ad logic yet
                 if not playing:
-                    count += 1
                     continue
                 
-                count = 0
-
+                last_active = datetime.now()
+                
                 # ────────────────────────────────────────────────
                 # 2. AD STARTS
                 # ────────────────────────────────────────────────
                 try:
                     if ad_is_current:
-
+                        
                         # Handle only-once-on-ad-start events
                         if not ad_was_current:
                             self._log("🔇 Ad detected — muting Spotify.")
                             # Save the volume at the moment ad began
                             previous_volume = self._get_spotify_volume()
-
+                            
                             self._set_spotify_volume(0)
-
+                            
                             if self.ad_alert_sound_is_on:
                                 self._play_tone()
-
+                            
                             ad_was_current = True
-
+                            
                             # Always force mute during ads
                             if self._get_spotify_volume() != 0:
                                 self._set_spotify_volume(0)
                                 self._play_tone()
-
+                    
                     # ────────────────────────────────────────────────
                     # 3. AD ENDS
                     # ────────────────────────────────────────────────
                     if not ad_is_current and ad_was_current:
                         self._log("🔊 Ad ended and music resumed "
                                   f"— restoring volume to {previous_volume}")
-
+                        
                         # Restore the volume user had before ad started
                         self._set_spotify_volume(previous_volume)
-
+                        
                         ad_was_current = False
                 except RuntimeError as e:
                     self._err(
@@ -247,7 +245,7 @@ class SpotifyAdMuter:
                         f"Error message: {e}"
                     )
                     sys.exit(1)
-
+        
         except KeyboardInterrupt:
             print("\n*❖* —————————————————————————————— *❖*")
             self._log("User ended the program. Sam is going to sleep...")
@@ -261,15 +259,15 @@ class SpotifyAdMuter:
             sys.exit(1)
         finally:
             print("\nProgram finished.")
-
+    
     # ##########################################################################
     # //////////////////////////// INTERNAL METHODS ////////////////////////////
     # ##########################################################################
-
+    
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ---------------- HELPER (STATIC) METHODS ----------------
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+    
     @staticmethod
     def _run_as(script) -> str:
         """Run AppleScript and return stdout."""
@@ -281,7 +279,7 @@ class SpotifyAdMuter:
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip())
         return result.stdout.strip()
-
+    
     @staticmethod
     def _log(message: str, newline: bool = True) -> None:
         """Print log message with formatted timestamp."""
@@ -294,16 +292,26 @@ class SpotifyAdMuter:
                   + datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                   + "]\033[0m")
     
-    def _get_delay(self, count: int, base: float) -> float:
+    def _get_delay(self, last_active: datetime) -> float:
+        """Return an adaptive poll delay based on elapsed inactivity time.
+
+        The delay increases smoothly as a function of real elapsed time
+        since the last detected Spotify activity, using an exponential
+        ramp. This avoids feedback distortion caused by growing sleep
+        intervals and ensures the poll interval increases at a constant
+        rate relative to wall-clock time, not loop iterations.
+    
+        The returned delay is scaled from the base poll interval and
+        should be capped by the caller if a maximum delay is desired.
         """
-        Gradually increase poll delay during inactivity.
-        
-        Capped to avoid excessive latency.
-        """
-        multiplier = min(
-            1 + count * self.IDLE_RAMP_RATE, self.MAX_POLL_MULTIPLIER
+        now = datetime.now()
+        elapsed = (now - last_active).total_seconds()
+        delay = min(
+            self.poll_interval * math.exp(self.IDLE_RAMP_RATE * elapsed),
+            self.MAX_DELAY
         )
-        return base * multiplier
+        self._log(f"{elapsed = :.3f}s | {delay = :.3f}s")
+        return delay
     
     @staticmethod
     def _err(
@@ -317,26 +325,26 @@ class SpotifyAdMuter:
             f"❌ \033[1m\033[31m" + "ERROR!" + "\033[0m: "
             + message
         )
-
+        
         print()
         for d in desc:
             print(d)
-
+        
         print()
         if restart:
             print("Try restarting the program.")
         print("If the error persists, consider reporting this issue.")
         print("*!* —————————————————————————————— *!*\n")
-
+        
     @staticmethod
     def _is_macos() -> bool:
         """Return whether running on macOS."""
         return sys.platform == "darwin"
-
+    
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ---------------- SETTINGS/SHORTCUT INITIALIZATION METHODS ----------------
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+    
     def _get_json_settings(self) -> dict:
         """Fetch 'settings.json' contents and return parsed config.
 
@@ -373,7 +381,7 @@ class SpotifyAdMuter:
                 "custom_ad_keywords": [],
                 "poll_interval": 0.3,
             }
-
+    
     def _check_shortcut_script(self) -> None:
         """Search device's Desktop folder for shortcut script file.
 
@@ -387,19 +395,19 @@ class SpotifyAdMuter:
                 self._create_shortcut_script()
             except FileNotFoundError:
                 return
-
+            
             script_dir = self.shortcut_script_path.parent
             self._log("\033[1mSam made an executable shortcut automatically "
                       f"created in {script_dir}. \033[0mYou can now double-click "
                       "'SAM.command' to run the program.")
             print("\n*❖* —————————————————————————————— *❖*")
-
+    
     def _create_shortcut_script(self) -> None:
         """Create shortcut executable script in device Desktop folder."""
         this_file_path = os.path.abspath(__file__)
-
+        
         script_contents = f'#!/bin/bash\nexec {sys.executable} "{this_file_path}"'
-
+        
         try:
             with open(self.shortcut_script_path, "w") as f:
                 f.write(script_contents)
@@ -410,7 +418,7 @@ class SpotifyAdMuter:
                 restart=False
             )
             raise FileNotFoundError
-
+        
         try:
             os.chmod(self.shortcut_script_path, 0o755)
         except Exception as e:
@@ -419,17 +427,17 @@ class SpotifyAdMuter:
                 f"Error summary: {e}",
                 traceback.format_exc(),
             )
-
+    
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ---------------- SPOTIFY STATE AND TRACK FETCH METHODS ----------------
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+    
     def _spotify_is_running(self) -> bool:
         """Return whether Spotify is running."""
         script = ('tell application "System Events" '
                   'to (name of processes) contains "Spotify"')
         return self._run_as(script) == "true"
-
+    
     def _spotify_is_playing(self) -> bool:
         """Return whether Spotify is playing."""
         script = '''
@@ -442,13 +450,13 @@ class SpotifyAdMuter:
         end tell
         '''
         return self._run_as(script) == "true"
-
+    
     def _get_current_track_info(self) -> tuple[str, str, str, int]:
         """Return the currently playing Spotify track info.
 
         Returns the current playing song name, artist, album, and duration.
         """
-
+        
         script = r'''
             tell application "Spotify"
                 try
@@ -470,24 +478,24 @@ class SpotifyAdMuter:
                 end try
             end tell
             '''
-
+        
         out = self._run_as(script)
-
+        
         try:
             data = json.loads(out)
         except json.JSONDecodeError:
             return "ERR", "ERR", "ERR", 0
-
+        
         if data.get("error"):
             return "ERR", "ERR", "ERR", 0
-
+        
         return (
             data["name"],
             data["artist"],
             data["album"],
             int(data["duration"]),
         )
-
+    
     def _ad_is_track(self) -> bool:
         """Return whether an advertisement is playing on Spotify.
 
@@ -497,28 +505,28 @@ class SpotifyAdMuter:
         contains any word from the defined list of ad keywords.
         """
         name, artist, album, duration = self._get_current_track_info()
-
+        
         # This sometimes occurs when the user manually selects another track
         # or playlist on Spotify and skips the current track, causing Spotify
         # to momentarily return an error when trying to get track info, so
         # this error can be ignored.
         if (name, artist, album, duration) == ('ERR', 'ERR', 'ERR', 0):
             return False
-
+        
         if album == "" and artist == "" and duration < 45000:
             return True
-
+        
         custom_keywords = [k.lower() for k in self.custom_ad_keywords]
-
+        
         name_lower = name.lower()
         ad_keywords = ["advertisement", "sponsored"] + custom_keywords
-
+        
         return any(keyword in name_lower for keyword in ad_keywords)
-
+    
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # ---------------- VOLUME CONTROL METHODS ----------------
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+    
     def _get_spotify_volume(self) -> int:
         """Fetch Spotify volume and return integer out of 100.
 
@@ -536,12 +544,12 @@ class SpotifyAdMuter:
                 restart=False
             )
             return 50
-
+    
     def _set_spotify_volume(self, x: int) -> None:
         """Set Spotify's volume to x."""
         script = f'tell application "Spotify" to set sound volume to {int(x)}'
         self._run_as(script)
-
+    
     def _play_tone(self, freq=180, duration=0.3) -> None:
         """Play, by default, a 180 Hz sine wave for 0.3 seconds.
 
@@ -551,11 +559,13 @@ class SpotifyAdMuter:
         num_samples = int(sample_rate * duration)
         file_path = Path("tone_tmp.wav")
         volume = self.ad_alert_volume
-
+        
         try:
             with wave.open(str(file_path), "w") as f:
-                f.setparams((1, 2, sample_rate, num_samples, "NONE",
-                             "not compressed"))
+                f.setparams((
+                    1, 2, sample_rate, num_samples, "NONE",
+                    "not compressed"
+                ))
                 for i in range(num_samples):
                     sample = volume * math.sin(2 * math.pi * freq
                                                * (i / sample_rate))
@@ -568,9 +578,9 @@ class SpotifyAdMuter:
                 restart=False,
             )
             return
-
+        
         subprocess.run(["afplay", str(file_path)])
-
+        
         os.remove(str(file_path))
 
 
