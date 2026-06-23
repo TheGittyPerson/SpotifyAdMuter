@@ -148,7 +148,9 @@ class SpotifyAdMuter:
             
             # Start of program — print correct initial message
             if not previously_playing:
-                self._log("No music playing. Sam is waiting for music to play...")
+                self._log(
+                    "No music playing. Sam is waiting for music to play..."
+                )
             else:
                 self._log(
                     "Music started! Sam will mute Spotify when ads are playing."
@@ -175,11 +177,7 @@ class SpotifyAdMuter:
                 sleep(self._get_delay(last_active))
                 
                 if not self._spotify_is_running():
-                    sleep(1)
-                    # Double-check to avoid race-condition during quit
-                    if not self._spotify_is_running():
-                        self._log("\n🚪 Spotify closed. Sam is going to sleep...")
-                        break
+                    sleep(self._get_delay(last_active))
                 
                 playing = self._spotify_is_playing()
                 ad_is_current = self._ad_is_track()
@@ -191,7 +189,9 @@ class SpotifyAdMuter:
                 if playing != previously_playing:
                     if not playing:
                         self._log(
-                            "No music playing. Sam is waiting for music to play...")
+                            "No music playing. Sam is waiting for music to "
+                            "play..."
+                        )
                     else:
                         self._log("Music started! Sam will mute Spotify when "
                                   "ads are playing")
@@ -284,8 +284,11 @@ class SpotifyAdMuter:
     def _log(message: str, newline: bool = True) -> None:
         """Print log message with formatted timestamp."""
         if newline:
-            print(f"\n{message} "
-                  f"\033[37m[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]\033[0m")
+            print(
+                f"\n{message} "
+                f"\033[37m[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]"
+                f"\033[0m"
+            )
         else:
             print(f"{message} "
                   f"\033[37m["
@@ -397,15 +400,17 @@ class SpotifyAdMuter:
             
             script_dir = self.shortcut_script_path.parent
             self._log("\033[1mSam made an executable shortcut automatically "
-                      f"created in {script_dir}. \033[0mYou can now double-click "
-                      "'SAM.command' to run the program.")
+                      f"created in {script_dir}. \033[0mYou can now "
+                      f"double-click 'SAM.command' to run the program.")
             print("\n*❖* —————————————————————————————— *❖*")
     
     def _create_shortcut_script(self) -> None:
         """Create shortcut executable script in device Desktop folder."""
         this_file_path = os.path.abspath(__file__)
         
-        script_contents = f'#!/bin/bash\nexec {sys.executable} "{this_file_path}"'
+        script_contents = (
+            f'#!/bin/bash\nexec {sys.executable} "{this_file_path}"'
+        )
         
         try:
             with open(self.shortcut_script_path, "w") as f:
@@ -413,7 +418,8 @@ class SpotifyAdMuter:
         except FileNotFoundError:
             self._err(
                 "Unable to create shortcut script file...",
-                "Please ensure the directory specified in 'settings.json' is valid.",
+                "Please ensure the directory specified in "
+                "'settings.json' is valid.",
                 restart=False
             )
             raise FileNotFoundError
@@ -476,7 +482,7 @@ class SpotifyAdMuter:
                     return "{\"error\":true}"
                 end try
             end tell
-            '''
+        '''
         
         out = self._run_as(script)
         
@@ -573,7 +579,7 @@ class SpotifyAdMuter:
             self._err(
                 "Something went wrong while playing ad alert tone...",
                 f"Error message: {e}",
-                "\nPlease ensure the volume specified in 'settings.json' is valid",
+                "\nPlease ensure the volume set in 'settings.json' is valid",
                 restart=False,
             )
             return
