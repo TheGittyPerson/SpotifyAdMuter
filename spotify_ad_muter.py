@@ -81,7 +81,7 @@ class SpotifyAdMuter:
             Time delay between polls, in seconds.
     """
     
-    VERSION = "2.1.1"
+    VERSION = "2.1.3"
     JSON_SETTINGS_NAME = "settings.json"
     JSON_SETTINGS_PATH = Path(__file__).resolve().parent / JSON_SETTINGS_NAME
     SHORTCUT_SCRIPT_NAME = "SAM.command"
@@ -177,10 +177,12 @@ class SpotifyAdMuter:
                 sleep(self._get_delay(last_active))
                 
                 if not self._spotify_is_running():
-                    sleep(self._get_delay(last_active))
                     continue
-                
-                playing = self._spotify_is_playing()
+
+                try:
+                    playing = self._spotify_is_playing()
+                except RuntimeError:
+                    playing = False
                 ad_is_current = self._ad_is_track()
                 
                 # ────────────────────────────────────────────────
