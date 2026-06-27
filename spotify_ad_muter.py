@@ -140,7 +140,7 @@ class SpotifyAdMuter:
             last_active = datetime.now()
             while not self._spotify_is_running():
                 sleep(self._get_delay(last_active))
-            
+
             # Read initial state
             previously_playing = self._spotify_is_playing()
             previous_volume = self._get_spotify_volume()
@@ -178,6 +178,7 @@ class SpotifyAdMuter:
                 
                 if not self._spotify_is_running():
                     sleep(self._get_delay(last_active))
+                    continue
                 
                 playing = self._spotify_is_playing()
                 ad_is_current = self._ad_is_track()
